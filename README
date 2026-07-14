@@ -12,6 +12,51 @@ Quick Start
 * Build the kernel: See Documentation/admin-guide/quickly-build-trimmed-linux.rst
 * Join the community: https://lore.kernel.org/
 
+Installing the ovpn Module
+--------------------------
+
+The ovpn module offloads OpenVPN data-channel processing to the kernel for
+better performance. Follow these steps to build and load it:
+
+1. Install build dependencies (Debian/Ubuntu)::
+
+     sudo apt install build-essential libncurses-dev bison flex libssl-dev libelf-dev
+
+   Alpine Linux::
+
+     sudo apk add build-base ncurses-dev bison flex openssl-dev elfutils-dev
+
+2. Clone this repository and enter the directory::
+
+     git clone https://github.com/Ice1984m/ovpn-net-next.git
+     cd ovpn-net-next
+
+3. Configure the kernel with ovpn enabled::
+
+     make menuconfig
+     # Navigate to: Device Drivers → Network device support
+     # Enable: "OpenVPN data channel offload" (CONFIG_OVPN)
+
+   Or enable it directly::
+
+     scripts/config --enable CONFIG_OVPN
+
+4. Build and install the module::
+
+     make modules SUBDIRS=drivers/net/ovpn
+     sudo make modules_install SUBDIRS=drivers/net/ovpn
+
+5. Load the module::
+
+     sudo modprobe ovpn
+
+6. Verify it is loaded::
+
+     lsmod | grep ovpn
+
+Once loaded, the OpenVPN userspace client will automatically use the kernel
+module for improved throughput.
+
 Essential Documentation
 -----------------------
 
