@@ -18,13 +18,20 @@ Installing the ovpn Module
 The ovpn module offloads OpenVPN data-channel processing to the kernel for
 better performance. Follow these steps to build and load it:
 
-1. Install build dependencies (Debian/Ubuntu)::
+1. Install dependencies:
+
+   Debian/Ubuntu::
 
      sudo apt install build-essential libncurses-dev bison flex libssl-dev libelf-dev
 
    Alpine Linux::
 
      sudo apk add build-base ncurses-dev bison flex openssl-dev elfutils-dev
+
+   Android (Termux, userspace OpenVPN client)::
+
+     pkg update
+     pkg install openvpn openssl
 
 2. Clone this repository and enter the directory::
 
@@ -56,6 +63,15 @@ better performance. Follow these steps to build and load it:
 
 Once loaded, the OpenVPN userspace client will automatically use the kernel
 module for improved throughput.
+
+Android and Termux notes:
+
+* The `ovpn` kernel module cannot be built or loaded from a stock Android
+  kernel.
+* Termux can run the OpenVPN userspace client (`openvpn`) with your `.ovpn`
+  profile.
+* To use kernel offload on Android, you need a custom kernel that includes
+  `CONFIG_OVPN` and root/module-loading access.
 
 Essential Documentation
 -----------------------
