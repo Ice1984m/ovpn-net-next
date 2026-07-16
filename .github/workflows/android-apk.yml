@@ -15,7 +15,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Detect Android Gradle project
+        id: detect_android
+        shell: bash
+        run: |
+          if [ -f ./gradlew ] && find . -type f \( -name "build.gradle" -o -name "build.gradle.kts" -o -name "settings.gradle" -o -name "settings.gradle.kts" \) | grep -q .; then
+            echo "has_android_project=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_android_project=false" >> "$GITHUB_OUTPUT"
+            echo "No Gradle Android project found; skipping APK build."
+          fi
+
       - name: Set up JDK 17
+        if: steps.detect_android.outputs.has_android_project == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -23,12 +35,15 @@ jobs:
           cache: gradle
 
       - name: Setup Android SDK
+        if: steps.detect_android.outputs.has_android_project == 'true'
         uses: android-actions/setup-android@v3
 
       - name: Grant execute permission for gradlew
+        if: steps.detect_android.outputs.has_android_project == 'true'
         run: chmod +x ./gradlew
 
       - name: Decode keystore
+        if: steps.detect_android.outputs.has_android_project == 'true'
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
@@ -39,6 +54,7 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 --decode > $GITHUB_WORKSPACE/release.keystore
 
       - name: Build signed release APK
+        if: steps.detect_android.outputs.has_android_project == 'true'
         env:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -52,6 +68,7 @@ jobs:
 
       - name: Locate APK
         id: locate_apk
+        if: steps.detect_android.outputs.has_android_project == 'true'
         run: |
           APK_PATH=$(find . -type f -path "*/build/outputs/apk/release/*.apk" | head -n 1)
           if [ -z "$APK_PATH" ]; then
@@ -62,8 +79,13 @@ jobs:
           echo "Found APK: $APK_PATH"
 
       - name: Upload signed APK artifact
+        if: steps.detect_android.outputs.has_android_project == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: signed-release-apk
           path: ${{ steps.locate_apk.outputs.apk_path }}
           if-no-files-found: error
+
+      - name: Skip APK build when Android project is unavailable
+        if: steps.detect_android.outputs.has_android_project != 'true'
+        run: echo "Android APK build skipped because this repository does not contain a Gradle Android project."
